@@ -1,4 +1,4 @@
-FROM node:16-buster
+FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND="noninteractive"
 
@@ -19,12 +19,19 @@ RUN /etc/init.d/postgresql start &&\
 
 
 USER root
+
+ENV NVM_DIR="$HOME/.nvm"
+RUN mkdir /.nvm
+RUN mkdir /hanabi-live
 COPY . /hanabi-live/
-RUN /etc/init.d/postgresql start && /hanabi-live/install/install_database_schema.sh
-RUN cd /hanabi-live && cp .env_template .env
-RUN chown -R node:node /hanabi-live
-USER node
-RUN cd /hanabi-live && ./install/install_dependencies.sh &&\
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash &&\
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" &&\
+    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion" &&\
+    nvm install node &&\
+    cd /hanabi-live && cp .env_template .env && \
+    ./install/install_dependencies.sh &&\
+    /etc/init.d/postgresql start &&\
+    ./install/install_database_schema.sh &&\
     cd client && npm install && ./build_client.sh &&\
     cd ../server && ./build_server.sh
 
